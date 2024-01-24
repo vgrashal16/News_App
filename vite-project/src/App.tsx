@@ -1,9 +1,14 @@
-import  { Component } from 'react';
+import { Component } from 'react';
 import axios from 'axios';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+} from 'react-router-dom';
 import PostList from './components/PostList';
 import SearchBar from './components/SearchBar';
-import PostDetails, { Post } from './components/PostDetails';
+import  PostDetails, { Post } from './components/PostDetails'
+import { Container, CircularProgress } from '@mui/material';
 
 interface AppState {
   posts: Post[];
@@ -11,10 +16,12 @@ interface AppState {
   selectedPost: Post | null;
   page: number;
   loading: boolean;
+  nbPages: number;
 }
 
 class App extends Component<{}, AppState> {
   interval: number | undefined;
+
   constructor(props: {}) {
     super(props);
 
@@ -24,16 +31,18 @@ class App extends Component<{}, AppState> {
       selectedPost: null,
       page: 0,
       loading: false,
+      nbPages: 0,
     };
   }
 
   componentDidMount() {
     this.fetchPosts();
     this.interval = setInterval(this.fetchPosts, 10000);
-   }
+  }
 
   componentWillUnmount() {
     clearInterval(this.interval);
+    this.handleSearch('');
   }
 
   fetchPosts = async () => {
@@ -43,6 +52,8 @@ class App extends Component<{}, AppState> {
       const response = await axios.get(
         `https://hn.algolia.com/api/v1/search_by_date?tags=story&page=${page}`
       );
+      this.setState({nbPages : response.data.nbPages});
+
       this.setState({
         posts: [...posts, ...response.data.hits],
         page: page + 1,
@@ -53,10 +64,20 @@ class App extends Component<{}, AppState> {
       this.setState({ loading: false });
     }
   };
+  
+  fetchMorePosts = async() => {
+    if (this.state.page > this.state.nbPages){
+      clearInterval(this.interval);
+      return
+    }
+    await this.fetchPosts();
+    clearInterval(this.interval);
+    this.interval = setInterval(this.fetchPosts, 10000);
+  }
 
   handleSearch = (searchTerm: string) => {
     const { posts } = this.state;
-    if (searchTerm.trim() === "") {
+    if (searchTerm.trim() === '') {
       this.setState({ filteredPosts: [] });
       return;
     }
@@ -66,38 +87,51 @@ class App extends Component<{}, AppState> {
         post.author.toLowerCase().includes(searchTerm.toLowerCase())
     );
     this.setState({ filteredPosts: filtered });
-    console.log(filtered);
+
   };
-  
 
   handleSelectPost = (post: Post) => {
     this.setState({ selectedPost: post });
   };
 
-
   render() {
-    const { filteredPosts, selectedPost } = this.state;
+    const { filteredPosts, selectedPost, loading } = this.state;
 
     return (
       <Router>
-        <div>
+        <Container>
           <Routes>
             <Route
               path="/"
               element={
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    flexDirection: 'column',
+                  }}
+                >
                   <SearchBar onSearch={this.handleSearch} />
-                  <PostList
-                    posts={filteredPosts.length > 0 ? filteredPosts : this.state.posts}
-                    onSelectPost={this.handleSelectPost}
-                    fetchMorePosts={this.fetchPosts}
-                  />
+                  
+                    <PostList
+                      posts={
+                        filteredPosts.length > 0
+                        ? filteredPosts
+                        : this.state.posts
+                      }
+                      onSelectPost={this.handleSelectPost}
+                      fetchMorePosts={this.fetchMorePosts}
+                      filteredlength={filteredPosts.length}
+                    />
+                    {loading &&
+                    <CircularProgress />}
                 </div>
               }
             />
             <Route path="/post" element={<PostDetails post={selectedPost} />} />
           </Routes>
-        </div>
+        </Container>
       </Router>
     );
   }
