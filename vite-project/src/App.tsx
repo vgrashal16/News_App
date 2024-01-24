@@ -1,5 +1,4 @@
 import { Component } from 'react';
-import axios from 'axios';
 import {
   BrowserRouter as Router,
   Route,
@@ -20,7 +19,7 @@ interface AppState {
 }
 
 class App extends Component<{}, AppState> {
-  interval: number | undefined;
+  interval: number | any;
 
   constructor(props: {}) {
     super(props);
@@ -49,13 +48,14 @@ class App extends Component<{}, AppState> {
     const { page, posts } = this.state;
     try {
       this.setState({ loading: true });
-      const response = await axios.get(
+      const res = await fetch(
         `https://hn.algolia.com/api/v1/search_by_date?tags=story&page=${page}`
       );
-      this.setState({nbPages : response.data.nbPages});
+      const data = await res.json()
+      this.setState({nbPages : data.nbPages});
 
       this.setState({
-        posts: [...posts, ...response.data.hits],
+        posts: [...posts, ...data.hits],
         page: page + 1,
       });
     } catch (error) {
