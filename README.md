@@ -25,7 +25,4 @@ How to Run:
 
 Testing:
 
-This project includes unit tests for components using Jest and react-testing-library. You can run the tests using the command npm test.
-Credits:
-
-This project was created as a part of learning React and React Router. It utilizes the Hacker News API for fetching post data.
+This project includes unit tests for components using Jest and react-testing-library. You can run the tests using the command npm test. This project was created as a part of learning React and React Router. It utilizes the Hacker News API for fetching post data.
